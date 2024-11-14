@@ -34,7 +34,6 @@ project(SEMB_VGA C CXX ASM)
 pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
-
 add_executable(SEMB_VGA src/main.c )
 
 pico_set_program_name(SEMB_VGA "SEMB_VGA")
@@ -56,7 +55,7 @@ target_include_directories(SEMB_VGA PRIVATE
 # Add any user requested libraries
 target_link_libraries(SEMB_VGA
         
-        )
+)
 
 pico_add_extra_outputs(SEMB_VGA)
 

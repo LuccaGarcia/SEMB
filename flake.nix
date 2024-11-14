@@ -44,6 +44,7 @@
           cmake
           gcc-arm-embedded
           gdb
+          clang-tools
           libusb1
           openocd
           # pico-sdk is being built locally
@@ -51,6 +52,9 @@
           picotool
           python3
           minicom
+          bear
+
+          glibc_multi
 
           flash-util
           serial-monitor-util

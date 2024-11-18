@@ -57,7 +57,7 @@ target_include_directories(vga_test PRIVATE
 
 # Add any user requested libraries
 target_link_libraries(vga_test 
-    pico_multicore
+    # pico_multicore
     pico_scanvideo_dpi
 )
 

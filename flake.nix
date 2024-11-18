@@ -65,6 +65,7 @@
         #'';
         shellHook = ''
           export PICO_SDK_PATH="/home/dvalinn/.pico/pico-sdk"
+          export PICO_EXTRAS_PATH="/home/dvalinn/.pico/pico-extras"
         '';
       };
     });

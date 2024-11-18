@@ -1,5 +1,4 @@
 # Generated Cmake Pico project file
-
 cmake_minimum_required(VERSION 3.13)
 
 set(CMAKE_C_STANDARD 11)
@@ -27,6 +26,8 @@ set(PICO_BOARD pico_w CACHE STRING "Board type")
 
 # Pull in Raspberry Pi Pico SDK (must be before project)
 include(pico_sdk_import.cmake)
+# Pull in pico extras
+include(pico_extras_import.cmake)
 
 project(vga_test C CXX ASM)
 
@@ -46,17 +47,19 @@ pico_enable_stdio_usb(vga_test 1)
 
 # Add the standard library to the build
 target_link_libraries(vga_test
-        pico_stdlib)
+    pico_stdlib
+)
 
 # Add the standard include files to the build
 target_include_directories(vga_test PRIVATE
-  ${CMAKE_CURRENT_LIST_DIR}
+    ${CMAKE_CURRENT_LIST_DIR}
 )
 
 # Add any user requested libraries
 target_link_libraries(vga_test 
-        
-        )
+    pico_multicore
+    pico_scanvideo_dpi
+)
 
 pico_add_extra_outputs(vga_test)
 

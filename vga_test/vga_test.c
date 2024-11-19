@@ -4,13 +4,11 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#include <stdio.h>
-
 #include <pico.h>
 #include <pico/scanvideo.h>
 #include <pico/scanvideo/composable_scanline.h>
 #include <pico/stdlib.h>
-#include <pico/sync.h>
+
 #if PICO_ON_DEVICE
 #include <hardware/clocks.h>
 #endif
@@ -23,8 +21,6 @@ static void frame_update_logic();
 static void render_scanline(struct scanvideo_scanline_buffer *dest);
 
 void render_loop() {
-  static uint32_t last_frame_num = 0;
-
   while (true) {
     struct scanvideo_scanline_buffer *scanline_buffer =
         scanvideo_begin_scanline_generation(true);
@@ -47,20 +43,30 @@ int vga_main(void) {
 
 void frame_update_logic() {}
 
-#define MIN_COLOR_RUN 3
+uint32_t to_scline_buffer(uint32_t low_half_word, uint32_t high_half_word) {
+  return low_half_word | (high_half_word << 16);
+}
 
 int32_t single_color_scanline(uint32_t *buf, size_t buf_length, int width,
                               uint32_t color16) {
+#define MIN_COLOR_RUN 3
+
   assert(buf_length >= 2);
-
   assert(width >= MIN_COLOR_RUN);
-  // | jmp color_run | color | count-3 |  buf[0] =
-  buf[0] = COMPOSABLE_COLOR_RUN | (color16 << 16);
-  buf[1] = (width - MIN_COLOR_RUN) | (COMPOSABLE_RAW_1P << 16);
-  // note we must end with a black pixel
-  buf[2] = 0 | (COMPOSABLE_EOL_ALIGN << 16);
 
-  return 3;
+  uint32_t color_run_count = width - MIN_COLOR_RUN;
+  uint32_t color_black = 0;
+
+  // Select COLOR_RUN mode and repeat color16 for every pixel.
+  // Afterwards, switch to RAW_1P mode and fill last pixel as black (mandatory).
+  // Finaly signal end of scanline with EOL_ALIGN.
+  buf[0] = to_scline_buffer(COMPOSABLE_COLOR_RUN, color16);
+  buf[1] = to_scline_buffer(color_run_count, COMPOSABLE_RAW_1P);
+  buf[2] = to_scline_buffer(color_black, COMPOSABLE_EOL_ALIGN);
+
+  return 3; // return how much of the buffer was used.
+
+#undef MIN_COLOR_RUN
 }
 
 void render_scanline(struct scanvideo_scanline_buffer *dest) {

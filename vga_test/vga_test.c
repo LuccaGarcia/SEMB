@@ -13,7 +13,6 @@
 #include <hardware/clocks.h>
 #endif
 
-#define DUAL_CORE_RENDER
 #define VGA_MODE vga_mode_320x240_60
 extern const struct scanvideo_pio_program video_24mhz_composable;
 
@@ -66,6 +65,34 @@ int32_t single_color_scanline(uint32_t *buf, size_t buf_length, int width,
 
   return 3; // return how much of the buffer was used.
 
+#undef MIN_COLOR_RUN
+}
+
+/// WARN: NEEDS TESTING
+int32_t scanline_from_raw_colors(uint32_t *buf, size_t buf_length,
+                                 uint32_t *colors, size_t colors_length) {
+#define MIN_COLOR_RUN 3
+
+  assert(buf_length >= MIN_COLOR_RUN);
+  assert(2 *buf_length = colors_length);
+
+  uint32_t color_black = 0;
+
+  buf[0] = to_scline_buffer(COMPOSABLE_RAW_RUN, colors[0]);
+  buf[1] = to_scline_buffer(colors_length - 3, colors[1]);
+
+  size_t buf_idx = 2;
+  size_t col_idx = 2;
+
+  while (buf_idx < buf_length - 1) {
+    assert(col_idx < colors_length);
+    buf[buf_idx] = to_scline_buffer(colors[col_idx], colors[col_idx + 1]);
+    buf_idx++;
+    col_idx += 2;
+  }
+  buf[buf_idx] = to_scline_buffer(COMPOSABLE_RAW_1P_SKIP_ALIGN, color_black);
+
+  return buf_length;
 #undef MIN_COLOR_RUN
 }
 

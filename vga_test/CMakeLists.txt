@@ -29,37 +29,36 @@ include(pico_sdk_import.cmake)
 # Pull in pico extras
 include(pico_extras_import.cmake)
 
-project(vga_test C CXX ASM)
+project(main C CXX ASM)
 
 # Initialise the Raspberry Pi Pico SDK
 pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
+add_executable(main main.c vga.c)
 
-add_executable(vga_test vga_test.c )
-
-pico_set_program_name(vga_test "vga_test")
-pico_set_program_version(vga_test "0.1")
+pico_set_program_name(main "pico_vga_arcade")
+pico_set_program_version(main "0.1")
 
 # Modify the below lines to enable/disable output over UART/USB
-pico_enable_stdio_uart(vga_test 0)
-pico_enable_stdio_usb(vga_test 1)
+pico_enable_stdio_uart(main 0)
+pico_enable_stdio_usb(main 1)
 
 # Add the standard library to the build
-target_link_libraries(vga_test
+target_link_libraries(main
     pico_stdlib
 )
 
 # Add the standard include files to the build
-target_include_directories(vga_test PRIVATE
+target_include_directories(main PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}
 )
 
 # Add any user requested libraries
-target_link_libraries(vga_test 
+target_link_libraries(main 
     # pico_multicore
     pico_scanvideo_dpi
 )
 
-pico_add_extra_outputs(vga_test)
+pico_add_extra_outputs(main)
 

@@ -1,5 +1,5 @@
 {
-  description = "Basic rpi pico development shell";
+  description = "rpi pico sdk development shell";
   inputs = {
     nixpkgs.url = "nixpkgs";
     flake-utils.url = "github:numtide/flake-utils";
@@ -12,9 +12,6 @@
   }:
     flake-utils.lib.eachDefaultSystem (system: let
       pkgs = nixpkgs.legacyPackages.${system};
-      #pico-sdk-submodules = (pkgs.pico-sdk.override (previous: {
-      #  withSubmodules = true;
-      #}));
 
       flash-util = pkgs.writeShellScriptBin "flash" ''
         # Check if an argument is provided
@@ -60,9 +57,7 @@
           serial-monitor-util
           debug-util
         ];
-        #shellHook = ''
-        #  export PICO_SDK_PATH="${pico-sdk-submodules}/lib/pico-sdk"
-        #'';
+        
         shellHook = ''
           export PICO_SDK_PATH="/home/dvalinn/.pico/pico-sdk"
           export PICO_EXTRAS_PATH="/home/dvalinn/.pico/pico-extras"

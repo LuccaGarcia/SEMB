@@ -9,7 +9,7 @@
 #define CANVAS_SIZE (VGA_MODE.width * VGA_MODE.height)
 extern const struct scanvideo_pio_program video_24mhz_composable;
 
-void initialize_canvas(uint16_t *canvas);
+uint16_t *get_canvas();
 uint16_t *get_next_canvas_slice(uint16_t *canvas);
 
 void render_scanline(struct scanvideo_scanline_buffer *dest,

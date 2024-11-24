@@ -56,7 +56,7 @@ target_include_directories(main PRIVATE
 
 # Add any user requested libraries
 target_link_libraries(main 
-    # pico_multicore
+    pico_multicore
     pico_scanvideo_dpi
 )
 

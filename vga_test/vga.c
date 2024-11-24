@@ -1,6 +1,8 @@
 #include <pico/scanvideo.h>
 #include <pico/scanvideo/composable_scanline.h>
 #include <pico/scanvideo/scanvideo_base.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "vga.h"
 
@@ -10,10 +12,24 @@ prepare_scanline_buffer(struct scanvideo_scanline_buffer *dest, uint width);
 static inline void
 finalize_scanline_buffer(struct scanvideo_scanline_buffer *dest);
 
-void initialize_canvas(uint16_t *canvas) {
-  for (size_t i = 0; i < CANVAS_SIZE; i++) {
-    canvas[i] = 0;
+uint16_t *get_canvas() {
+  static uint16_t *canvas = NULL;
+
+  // Initialize canvas if not already done
+  if (canvas == NULL) {
+    canvas = (uint16_t *)malloc(sizeof(uint16_t) * CANVAS_SIZE);
+    if (canvas == NULL) {
+      printf("Error: Memory allocation for canvas failed!\n");
+      return NULL;
+    }
+
+    // Clear the canvas
+    for (size_t i = 0; i < CANVAS_SIZE; i++) {
+      canvas[i] = 0;
+    }
   }
+
+  return canvas;
 }
 
 uint16_t *get_next_canvas_slice(uint16_t *canvas) {

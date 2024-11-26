@@ -35,7 +35,7 @@ project(main C CXX ASM)
 pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
-add_executable(main main.c vga.c)
+add_executable(main main.c game.c vga.c)
 
 pico_set_program_name(main "pico_vga_arcade")
 pico_set_program_version(main "0.1")

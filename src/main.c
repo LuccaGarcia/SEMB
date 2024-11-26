@@ -1,20 +1,18 @@
-#include <stdio.h>
-
 #include <pico.h>
 #include <pico/multicore.h>
 #include <pico/stdlib.h>
-#include <pico/sync.h>
+#include <stdio.h>
 
-#if PICO_ON_DEVICE
-#include <hardware/clocks.h>
-#endif
-
+#include "game.h"
 #include "vga.h"
 
 static struct mutex canvas_mutex; // Probably unnecessary
 struct semaphore video_setup_complete;
 
 void render_loop() {
+  sem_acquire_blocking(&video_setup_complete);
+
+  // TODO: clean up this logic into VGA module
   while (true) {
     // Begin scanline generation
     struct scanvideo_scanline_buffer *scanline_buffer =
@@ -22,11 +20,12 @@ void render_loop() {
 
     mutex_enter_blocking(&canvas_mutex);
 
-    uint16_t *canvas = get_canvas();
+    uint16_t *canvas = vga_get_canvas();
+
     hard_assert(canvas != NULL);
     // Update canvas slice and render the scanline
-    uint16_t *current_slice = get_next_canvas_slice(canvas);
-    render_scanline(scanline_buffer, current_slice);
+    uint16_t *current_slice = vga_get_next_canvas_slice(canvas);
+    vga_render_scanline(scanline_buffer, current_slice);
 
     mutex_exit(&canvas_mutex);
 
@@ -35,85 +34,79 @@ void render_loop() {
   }
 }
 
-int vga_main() {
-  printf("VGA_SETUP");
-  scanvideo_setup(&VGA_MODE);
-  scanvideo_timing_enable(true);
+void update_canvas(const struct game_state *gs) {
 
-  { (void)get_canvas(); } // force canvas initialization :^)
+  mutex_enter_blocking(&canvas_mutex);
+  uint16_t *canvas = vga_get_canvas();
 
-  sem_release(&video_setup_complete); // Setup complete, let core 1 start
+  // Clear the old rectangle
+  vga_draw_rectangle_filled(canvas, gs->rect_x - gs->v_x, gs->rect_y - gs->v_y,
+                            gs->rect_w, gs->rect_h, gs->bg_color);
 
-  render_loop();
-  return 0;
+  // Draw the new rectangle
+  vga_draw_rectangle_filled(canvas, gs->rect_x, gs->rect_y, gs->rect_w,
+                            gs->rect_h, gs->rect_color);
+  mutex_exit(&canvas_mutex);
 }
 
-void core1_func() {
-  sem_acquire_blocking(&video_setup_complete);
-
-  uint16_t bg_color =
-      (uint16_t)PICO_SCANVIDEO_PIXEL_FROM_RGB5(0xc7, 0xff, 0xdd);
-  uint16_t rect_color =
-      (uint16_t)PICO_SCANVIDEO_PIXEL_FROM_RGB5(0x42, 0xba, 0xff);
-
-  uint16_t rect_x = 20;
-  uint16_t rect_y = 20;
-  uint16_t rect_w = 20;
-  uint16_t rect_h = 20;
-
-  uint16_t padding_x = 4;
-  uint16_t padding_y = 10;
-
-  int16_t v_x = 2;
-  int16_t v_y = 2;
-
-  absolute_time_t last_time = get_absolute_time();
-
-  while (1) {
-    if (rect_x + rect_w > VGA_MODE.width - padding_x) {
-      rect_x = VGA_MODE.width - rect_w - padding_x; // Correct position
-      v_x *= -1;                                  // Reverse velocity
-    } else if (rect_x < padding_x) {
-      rect_x = padding_x; // Correct position
-      v_x *= -1;        // Reverse velocity
-    }
-
-    if (rect_y + rect_h > VGA_MODE.height - padding_y) {
-      rect_y = VGA_MODE.height - rect_h - padding_y; // Correct position
-      v_y *= -1;                                   // Reverse velocity
-    } else if (rect_y < padding_y) {
-      rect_y = padding_y; // Correct position
-      v_y *= -1;        // Reverse velocity
-    }
-    printf("pos: %d, %d | v: %d, %d\n", rect_x, rect_y, v_x, v_y);
-
-    mutex_enter_blocking(&canvas_mutex);
-
-    uint16_t *canvas = get_canvas();
-    draw_rectangle_filled(canvas, rect_x, rect_y, rect_w, rect_h, bg_color);
-    rect_x += v_x;
-    rect_y += v_y;
-    draw_rectangle_filled(canvas, rect_x, rect_y, rect_w, rect_h, rect_color);
-
-    mutex_exit(&canvas_mutex);
-
-    absolute_time_t target_time =
-        delayed_by_ms(last_time, 33); // 33 ms approx 30 FPS
-    sleep_until(target_time);
-    last_time = target_time;
+bool game_logic_callback(repeating_timer_t *timer) {
+  // Some metrics
+  {
+    static absolute_time_t last_tick = 0;
+    absolute_time_t now = get_absolute_time();
+    absolute_time_t delta = now - last_tick;
+    last_tick = now;
+    printf("logic period: %llu us\n", delta);
   }
+
+  struct game_state *gs = (struct game_state *)timer->user_data;
+
+  // Update game state
+  update_game_state(gs);
+
+  // Draw the updated state to the canvas
+  update_canvas(gs);
+
+  return true; // Returning true keeps the timer running
 }
 
 int main(void) {
-#if PICO_SCANVIDEO_48MHZ
-  set_sys_clock_48mhz();
-#endif
   stdio_usb_init();
-  setup_default_uart();
-
-  sem_init(&video_setup_complete, 0, 1);
   mutex_init(&canvas_mutex);
 
-  multicore_launch_core1(core1_func);
-  return vga_main();
+  sem_init(&video_setup_complete, 0, 1);
+  {
+    multicore_launch_core1(render_loop);
+    vga_init();
+  }
+  sem_release(
+      &video_setup_complete); // VGA complete, let core 1 start rendering
+
+  struct game_state gs = {
+      .bg_color = (uint16_t)PICO_SCANVIDEO_PIXEL_FROM_RGB5(0xc7, 0xff, 0xdd),
+      .rect_color = (uint16_t)PICO_SCANVIDEO_PIXEL_FROM_RGB5(0x42, 0xba, 0xff),
+      .padding_x = 4,
+      .padding_y = 10,
+      .rect_x = 20,
+      .rect_y = 20,
+      .rect_w = 20,
+      .rect_h = 20,
+      .v_x = 2,
+      .v_y = 2,
+      .canvas_w = VGA_MODE.width,
+      .canvas_h = VGA_MODE.height,
+  };
+
+  // Set up a repeating timer that calls the game_timer_callback every 33ms (~30
+  // FPS)
+  repeating_timer_t game_timer;
+  if (!add_repeating_timer_ms(33, game_logic_callback, &gs, &game_timer)) {
+    printf("Failed to add repeating timer!\n");
+    return -1;
+  }
+
+  // The main thread can now perform other tasks or sleep
+  while (1) {
+    tight_loop_contents(); // Keeps the core idle and responsive
+  }
 }

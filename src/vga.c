@@ -6,13 +6,22 @@
 
 #include "vga.h"
 
+extern const struct scanvideo_pio_program video_24mhz_composable;
+
 static inline uint16_t *
 prepare_scanline_buffer(struct scanvideo_scanline_buffer *dest, uint width);
 
 static inline void
 finalize_scanline_buffer(struct scanvideo_scanline_buffer *dest);
 
-uint16_t *get_canvas() {
+void vga_init() {
+  scanvideo_setup(&VGA_MODE);
+  scanvideo_timing_enable(true);
+
+  (void)vga_get_canvas(); // force canvas initialization :^)
+}
+
+uint16_t *vga_get_canvas() {
   static uint16_t *canvas = NULL;
 
   // Initialize canvas if not already done
@@ -32,7 +41,7 @@ uint16_t *get_canvas() {
   return canvas;
 }
 
-uint16_t *get_next_canvas_slice(uint16_t *canvas) {
+uint16_t *vga_get_next_canvas_slice(uint16_t *canvas) {
   static size_t current_row_index = 0;
 
   // Update logic: Cycle through rows
@@ -44,8 +53,8 @@ uint16_t *get_next_canvas_slice(uint16_t *canvas) {
   return &canvas[current_row_index * VGA_MODE.width];
 }
 
-void render_scanline(struct scanvideo_scanline_buffer *dest,
-                     uint16_t *canvas_slice) {
+void vga_render_scanline(struct scanvideo_scanline_buffer *dest,
+                         uint16_t *canvas_slice) {
   uint16_t *color_buffer = prepare_scanline_buffer(dest, VGA_MODE.width);
 
   // Copy the row from the canvas to the color buffer
@@ -57,8 +66,8 @@ void render_scanline(struct scanvideo_scanline_buffer *dest,
 }
 
 // Canvas Manipulation Functions
-void draw_rectangle_filled(uint16_t *canvas, size_t x, size_t y, size_t width,
-                           size_t height, uint16_t color) {
+void vga_draw_rectangle_filled(uint16_t *canvas, size_t x, size_t y,
+                               size_t width, size_t height, uint16_t color) {
   for (size_t row = 0; row < height; row++) {
     size_t canvas_y = y + row;
     if (canvas_y >= VGA_MODE.height)
@@ -76,8 +85,8 @@ void draw_rectangle_filled(uint16_t *canvas, size_t x, size_t y, size_t width,
 }
 
 // Draw a rectangle with borders only
-void draw_rectangle_border(uint16_t *canvas, size_t x, size_t y, size_t width,
-                           size_t height, uint16_t color) {
+void vga_draw_rectangle_border(uint16_t *canvas, size_t x, size_t y,
+                               size_t width, size_t height, uint16_t color) {
   // Top and bottom borders
   for (size_t col = 0; col < width; col++) {
     size_t top_index = y * VGA_MODE.width + (x + col);

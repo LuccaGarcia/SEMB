@@ -28,23 +28,21 @@ set(PICO_BOARD pico_w CACHE STRING "Board type")
 # Pull in Raspberry Pi Pico SDK (must be before project)
 include(pico_sdk_import.cmake)
 
-project(picow_blink C CXX ASM)
+project(main C CXX ASM)
 
 # Initialise the Raspberry Pi Pico SDK
 pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
-add_executable(picow_blink picow_blink.c)
+add_executable(main main.c)
 
 # Modify the below lines to enable/disable output over UART/USB
-pico_enable_stdio_uart(picow_blink 1)
-pico_enable_stdio_usb(picow_blink 0)
+pico_enable_stdio_uart(main 1)
+pico_enable_stdio_usb(main 0)
 
-target_link_libraries(picow_blink
+target_link_libraries(main
         pico_stdlib              # for core functionality
-        pico_cyw43_arch_none     # we need Wifi to access the GPIO, but we don't need anything else
 )
 
-
 # create map/bin/hex file etc.
-pico_add_extra_outputs(picow_blink)
+pico_add_extra_outputs(main)

@@ -70,6 +70,12 @@ bool game_logic_callback(repeating_timer_t *timer) {
   return true; // Returning true keeps the timer running
 }
 
+// Timer callback to process and decode events after inactivity
+bool ir_decode_callback(repeating_timer_t *rt) {
+
+  return true; // Continue running the timer
+}
+
 int main(void) {
   stdio_usb_init();
   mutex_init(&canvas_mutex);
@@ -105,8 +111,16 @@ int main(void) {
     return -1;
   }
 
+  repeating_timer_t ir_decode_timer;
+  if (!add_repeating_timer_ms(10, ir_decode_callback, NULL, &ir_decode_timer)) {
+    printf("Failed to add repeating timer!\n");
+    return -1;
+  }
+
   // The main thread can now perform other tasks or sleep
   while (1) {
+    // Create a work queue. Callbacks push respective task into the queue and
+    // main thread runs it.
     tight_loop_contents(); // Keeps the core idle and responsive
   }
 }

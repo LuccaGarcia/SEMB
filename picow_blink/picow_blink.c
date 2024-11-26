@@ -12,11 +12,10 @@
 #define LOGIC_0_SPACE (2 * PULSE_TIME) // Space duration for logic 0
 #define LOGIC_1_SPACE (4 * PULSE_TIME) // Space duration for logic 1
 #define BUFFER_SIZE 100                // Maximum number of events to store
-#define MESSAGE_BIT_MAX 31
-
-#define TIMING_SLACK_US 200
-#define IN_TIMING_WINDOW(X, EXPECTED, SLACK)                                   \
-  (EXPECTED + SLACK > X && X > EXPECTED - SLACK)
+#define MESSAGE_BIT_MAX 32  // Maximum number of bits in a NEC message
+#define TIMING_SLACK_US 200 // Tolerance around timing target
+#define IN_TIMING_WINDOW(value, target, tolerance)                             \
+  (target + tolerance > value && value > target - tolerance)
 
 // Structure to store events
 typedef struct {

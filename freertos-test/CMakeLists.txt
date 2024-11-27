@@ -26,8 +26,10 @@ target_link_libraries(on_either_core_common INTERFACE
 
 add_executable(on_core_zero)
 target_link_libraries(on_core_zero on_either_core_common)
+
 pico_add_extra_outputs(on_core_zero)
-pico_enable_stdio_usb(on_core_zero 1)
+pico_enable_stdio_usb(on_core_zero 0)
+pico_enable_stdio_uart(on_core_zero 1)
 
 add_executable(on_core_one)
 target_link_libraries(on_core_one on_either_core_common)
@@ -48,4 +50,5 @@ target_compile_options( on_core_one PUBLIC
         )
 
 pico_add_extra_outputs(on_core_one)
-#pico_enable_stdio_usb(on_core_one 1)
+pico_enable_stdio_usb(on_core_one 0)
+pico_enable_stdio_uart(on_core_one 1)

@@ -1,10 +1,21 @@
+// C includes
+#include <stdio.h>
+
+// Pico SDK
 #include <pico.h>
 #include <pico/multicore.h>
 #include <pico/stdlib.h>
-#include <stdio.h>
 
+// FreeRTOS
+#include <FreeRTOS.h>
+#include <task.h>
+
+// Project specific
 #include "game.h"
 #include "vga.h"
+
+static void prvSetupHardware(void);
+static void prvLaunchRTOS();
 
 static struct mutex canvas_mutex; // Probably unnecessary
 struct semaphore video_setup_complete;
@@ -70,13 +81,14 @@ bool game_logic_callback(repeating_timer_t *timer) {
   return true; // Returning true keeps the timer running
 }
 
-// Timer callback to process and decode events after inactivity
-bool ir_decode_callback(repeating_timer_t *rt) {
-
-  return true; // Continue running the timer
-}
-
 int main(void) {
+  /* prvSetupHardware(); */
+
+  // Some more init stuff
+
+  /* multicore_launch_core1(render_loop); */
+  /* prvLaunchRTOS(); */
+
   stdio_usb_init();
   mutex_init(&canvas_mutex);
 
@@ -111,16 +123,55 @@ int main(void) {
     return -1;
   }
 
-  repeating_timer_t ir_decode_timer;
-  if (!add_repeating_timer_ms(10, ir_decode_callback, NULL, &ir_decode_timer)) {
-    printf("Failed to add repeating timer!\n");
-    return -1;
-  }
-
   // The main thread can now perform other tasks or sleep
   while (1) {
     // Create a work queue. Callbacks push respective task into the queue and
     // main thread runs it.
     tight_loop_contents(); // Keeps the core idle and responsive
   }
+}
+
+/* ---------------------------------------------------------------------------------------
+ * ---------------------------------------------------------------------------------------
+ */
+
+void vApplicationMallocFailedHook(void) {
+  /* The malloc failed hook is enabled by setting
+  configUSE_MALLOC_FAILED_HOOK to 1 in FreeRTOSConfig.h.
+
+  Called if a call to pvPortMalloc() fails because there is insufficient
+  free memory available in the FreeRTOS heap.  pvPortMalloc() is called
+  internally by FreeRTOS API functions that create tasks, queues, software
+  timers, and semaphores.  The size of the FreeRTOS heap is set by the
+  configTOTAL_HEAP_SIZE configuration constant in FreeRTOSConfig.h. */
+  panic("malloc failed");
+}
+
+void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName) {
+  (void)pcTaskName;
+  (void)xTask;
+
+  /* Run time stack overflow checking is performed if config
+   * configCHECK_FOR_STACK_OVERFLOW is defined to 1 or 2.
+   * This hook function is called if a stack overflow is detected.
+   * pxCurrentTCB can be inspected in the debugger if the task name
+   * passed into this function is corrupt. */
+  for (;;)
+    ;
+}
+
+static void prvSetupHardware(void) {
+  /* Want to be able to printf */
+  stdio_init_all();
+  /* And flash LED */
+  gpio_init(PICO_DEFAULT_LED_PIN);
+  gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
+}
+
+static void prvLaunchRTOS() {
+  printf("Core %d: Launching FreeRTOS scheduler\n", get_core_num());
+  /* Start the tasks and timer running. */
+  vTaskStartScheduler();
+  /* should never reach here */
+  panic_unsupported();
 }

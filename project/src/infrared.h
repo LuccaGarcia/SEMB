@@ -29,11 +29,11 @@
 #define IR_START_SPACE 4500  // Start space duration (4.5ms)
 #define IR_TIMEOUT_MS 10000  // Timeout between messages
 #define IR_TIMER_PERIOD 1000 // Period of the IR timeout timer
-#define IR_LOGIC_0_SPACE (2 * PULSE_TIME) // Space duration for logic 0
-#define IR_LOGIC_1_SPACE (4 * PULSE_TIME) // Space duration for logic 1
-#define IR_BUFFER_SIZE 100                // Maximum number of events to store
+#define IR_LOGIC_0_SPACE (2 * IR_PULSE_TIME) // Space duration for logic 0
+#define IR_LOGIC_1_SPACE (4 * IR_PULSE_TIME) // Space duration for logic 1
 #define IR_MESSAGE_BIT_MAX 32  // Maximum number of bits in a NEC message
 #define IR_TIMING_SLACK_US 200 // Tolerance around timing target
+#define IR_BUFFER_SIZE 100     // Maximum number of events to store
 #define IR_IN_TIMING_WINDOW(value, target, tolerance)                          \
   (target + tolerance > value && value > target - tolerance)
 
@@ -50,10 +50,5 @@ typedef enum {
   DATA,
 } ir_phases;
 
-volatile ir_phases ir_current_phase;
-volatile ir_event_t event_buffer[IR_BUFFER_SIZE]; // Buffer to store events
-volatile int event_count = 0;                     // Number of events stored
-
-void ir_init(void);
-
+//
 #endif

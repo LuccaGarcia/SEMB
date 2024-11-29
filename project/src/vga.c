@@ -46,19 +46,19 @@ uint16_t *vga_get_next_canvas_slice(uint16_t *canvas) {
 
   // Update logic: Cycle through rows
   current_row_index++;
-  if (current_row_index >= VGA_MODE.height) {
+  if (current_row_index >= CANVAS_HEIGHT) {
     current_row_index = 0;
   }
 
-  return &canvas[current_row_index * VGA_MODE.width];
+  return &canvas[current_row_index * CANVAS_WIDTH];
 }
 
 void vga_render_scanline(struct scanvideo_scanline_buffer *dest,
                          uint16_t *canvas_slice) {
-  uint16_t *color_buffer = prepare_scanline_buffer(dest, VGA_MODE.width);
+  uint16_t *color_buffer = prepare_scanline_buffer(dest, CANVAS_WIDTH);
 
   // Copy the row from the canvas to the color buffer
-  for (size_t px = 0; px < VGA_MODE.width; px++) {
+  for (size_t px = 0; px < CANVAS_WIDTH; px++) {
     color_buffer[px] = canvas_slice[px];
   }
 
@@ -70,15 +70,15 @@ void vga_draw_rectangle_filled(uint16_t *canvas, size_t x, size_t y,
                                size_t width, size_t height, uint16_t color) {
   for (size_t row = 0; row < height; row++) {
     size_t canvas_y = y + row;
-    if (canvas_y >= VGA_MODE.height)
+    if (canvas_y >= CANVAS_HEIGHT)
       break;
 
     for (size_t col = 0; col < width; col++) {
       size_t canvas_x = x + col;
-      if (canvas_x >= VGA_MODE.width)
+      if (canvas_x >= CANVAS_WIDTH)
         break;
 
-      size_t index = canvas_y * VGA_MODE.width + canvas_x;
+      size_t index = canvas_y * CANVAS_WIDTH + canvas_x;
       canvas[index] = color;
     }
   }
@@ -89,26 +89,26 @@ void vga_draw_rectangle_border(uint16_t *canvas, size_t x, size_t y,
                                size_t width, size_t height, uint16_t color) {
   // Top and bottom borders
   for (size_t col = 0; col < width; col++) {
-    size_t top_index = y * VGA_MODE.width + (x + col);
-    size_t bottom_index = (y + height - 1) * VGA_MODE.width + (x + col);
+    size_t top_index = y * CANVAS_WIDTH + (x + col);
+    size_t bottom_index = (y + height - 1) * CANVAS_WIDTH + (x + col);
 
-    if (x + col < VGA_MODE.width) {
-      if (y < VGA_MODE.height)
+    if (x + col < CANVAS_WIDTH) {
+      if (y < CANVAS_HEIGHT)
         canvas[top_index] = color; // Top border
-      if (y + height - 1 < VGA_MODE.height)
+      if (y + height - 1 < CANVAS_HEIGHT)
         canvas[bottom_index] = color; // Bottom border
     }
   }
 
   // Left and right borders
   for (size_t row = 0; row < height; row++) {
-    size_t left_index = (y + row) * VGA_MODE.width + x;
-    size_t right_index = (y + row) * VGA_MODE.width + (x + width - 1);
+    size_t left_index = (y + row) * CANVAS_WIDTH + x;
+    size_t right_index = (y + row) * CANVAS_WIDTH + (x + width - 1);
 
-    if (y + row < VGA_MODE.height) {
-      if (x < VGA_MODE.width)
+    if (y + row < CANVAS_HEIGHT) {
+      if (x < CANVAS_WIDTH)
         canvas[left_index] = color; // Left border
-      if (x + width - 1 < VGA_MODE.width)
+      if (x + width - 1 < CANVAS_WIDTH)
         canvas[right_index] = color; // Right border
     }
   }

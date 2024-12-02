@@ -5,7 +5,7 @@
 #include <pico/scanvideo/composable_scanline.h>
 #include <pico/scanvideo/scanvideo_base.h>
 
-#define VGA_MODE vga_mode_160x120_60
+#define VGA_MODE vga_mode_320x240_60
 #define CANVAS_WIDTH VGA_MODE.width
 #define CANVAS_HEIGHT VGA_MODE.height
 #define CANVAS_SIZE (CANVAS_WIDTH * CANVAS_HEIGHT)

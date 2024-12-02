@@ -1,5 +1,5 @@
-#ifndef _IR_H_
-#define _IR_H_
+#ifndef _DECODE_H_
+#define _DECODE_H_
 
 #include <pico.h>
 
@@ -23,7 +23,7 @@
 
 // -------- Commands --------
 
-#define IR_GPIO_PIN 22       // GPIO pin connected to the IR receiver
+#define IR_GPIO_PIN 20       // GPIO pin connected to the IR receiver
 #define IR_PULSE_TIME 562    // Single data pulse duration
 #define IR_START_PULSE 9300  // Start pulse duration (9ms)
 #define IR_START_SPACE 4500  // Start space duration (4.5ms)

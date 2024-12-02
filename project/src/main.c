@@ -18,7 +18,6 @@
 #include "vga.h"
 
 #define mainGAME_LOGIC_TASK_PRIORITY (tskIDLE_PRIORITY + 1)
-#define GPIO_PIN 20
 
 volatile ir_event_t event_buffer[IR_BUFFER_SIZE]; // Buffer to store events
 volatile uint16_t event_count = 0;                // Number of events stored
@@ -213,13 +212,14 @@ static void prvSetupHardware(void) {
   /* Want to be able to printf */
   stdio_usb_init();
 
-  gpio_init(GPIO_PIN);             // Initialize the GPIO pin
-  gpio_set_dir(GPIO_PIN, GPIO_IN); // Set GPIO as input
-  gpio_pull_up(GPIO_PIN);          // Enable pull-up resistor (optional)
+  gpio_init(IR_GPIO_PIN);             // Initialize the GPIO pin
+  gpio_set_dir(IR_GPIO_PIN, GPIO_IN); // Set GPIO as input
+  gpio_pull_up(IR_GPIO_PIN);          // Enable pull-up resistor (optional)
 
   // Enable interrupts on falling edges for the specified GPIO
-  gpio_set_irq_enabled_with_callback(
-      GPIO_PIN, GPIO_IRQ_EDGE_FALL | GPIO_IRQ_EDGE_RISE, true, &gpio_callback);
+  gpio_set_irq_enabled_with_callback(IR_GPIO_PIN,
+                                     GPIO_IRQ_EDGE_FALL | GPIO_IRQ_EDGE_RISE,
+                                     true, &gpio_callback);
 }
 
 static void prvLaunchRTOS() {

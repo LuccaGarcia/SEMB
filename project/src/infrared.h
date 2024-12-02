@@ -1,5 +1,5 @@
-#ifndef _DECODE_H_
-#define _DECODE_H_
+#ifndef _IR_H_
+#define _IR_H_
 
 #include <pico.h>
 

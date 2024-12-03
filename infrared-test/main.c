@@ -7,8 +7,8 @@
 #define PULSE_TIME 562                 // Single data pulse duration
 #define START_PULSE 9300               // Start pulse duration (9ms)
 #define START_SPACE 4500               // Start space duration (4.5ms)
-#define IR_TIMEOUT_MS 10000            // Timeout between messages
-#define IR_TIMER_PERIOD 1000           // Period of the IR timeout timer
+#define IR_TIMEOUT_MS 25000            // Timeout between messages
+#define IR_TIMER_PERIOD 5000           // Period of the IR timeout timer
 #define LOGIC_0_SPACE (2 * PULSE_TIME) // Space duration for logic 0
 #define LOGIC_1_SPACE (4 * PULSE_TIME) // Space duration for logic 1
 #define BUFFER_SIZE 100                // Maximum number of events to store
@@ -89,8 +89,17 @@ void decode_nec_protocol() {
     bit_count++;
   }
 
-  // Print decoded data
-  printf("Decoded data: 0x%08X (%d bits)\n", message, bit_count);
+  uint8_t cmd_inv = (message) & 0xFF;
+  uint8_t command = (message >> 8) & 0xFF;
+  uint8_t addr_inv = (message >> 16) & 0xFF;
+  uint8_t addr = (message >> 24) & 0xFF;
+
+  bool cmd_valid = ((command ^ cmd_inv) == 0xFF);
+  bool addr_valid = ((addr ^ addr_inv) == 0xFF);
+
+  printf("decoded addr: %d, valid: %s\n", addr, addr_valid ? "True" : "False");
+  printf("decoded cmd: %d, valid: %s\n", command, cmd_valid ? "True" : "False");
+
   event_count = 0; // Reset buffer
 }
 

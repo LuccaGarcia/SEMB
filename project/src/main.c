@@ -52,6 +52,7 @@ void render_loop() {
 
 void update_canvas(const struct game_state *gs) {
   mutex_enter_blocking(&render_sync_mutex);
+
   uint16_t *canvas = vga_get_canvas();
 
   // Clear the old rectangle
@@ -98,7 +99,7 @@ static void prvGameLogicTask(void *pvParameters) {
 }
 
 // Function to decode NEC protocol from buffered events
-uint32_t decode_nec_protocol() {
+uint32_t process_ir_buffer() {
   if (event_count < 3) {
     printf("Insufficient events to decode\n");
     event_count = 0;
@@ -182,9 +183,24 @@ static void vDecodeTimerCallback(TimerHandle_t xTimer) {
   if (event_count > 0) {
     uint64_t latest_event_time = event_buffer[event_count - 1].timestamp;
     if (current_time - latest_event_time > IR_TIMEOUT_MS) { // 10ms inactivity
-      uint32_t message = decode_nec_protocol(); // Decode the buffered events
-      event_count = 0;                          // Reset the buffer
-      printf("IR: Decoded data: 0x%08X\n", message);
+      uint32_t raw_message = process_ir_buffer(); // Decode the buffered events
+
+      if (!raw_message) {
+        return;
+      }
+
+      uint8_t cmd_inv = (raw_message) & 0xFF;
+      uint8_t command = (raw_message >> 8) & 0xFF;
+      uint8_t addr_inv = (raw_message >> 16) & 0xFF;
+      uint8_t addr = (raw_message >> 24) & 0xFF;
+
+      bool cmd_valid = ((command ^ cmd_inv) == 0xFF);
+      bool addr_valid = ((addr ^ addr_inv) == 0xFF);
+
+      printf("decoded addr: %d, valid: %s\n", addr,
+             addr_valid ? "True" : "False");
+      printf("decoded cmd: %d, valid: %s\n", command,
+             cmd_valid ? "True" : "False");
     }
   }
 }
@@ -200,9 +216,9 @@ int main(void) {
   xTaskCreate(prvGameLogicTask, "Game Logic", configMINIMAL_STACK_SIZE, NULL,
               mainGAME_LOGIC_TASK_PRIORITY, NULL);
 
-  xIrDecodeTimer = xTimerCreate((const char *)"IrDecodeTimer", 10, pdTRUE,
-                                (void *)0, vDecodeTimerCallback);
-
+  TickType_t timer_period = pdMS_TO_TICKS(25);
+  xIrDecodeTimer = xTimerCreate((const char *)"IrDecodeTimer", timer_period,
+                                pdTRUE, (void *)0, vDecodeTimerCallback);
   xTimerStart(xIrDecodeTimer, 0);
 
   prvLaunchRTOS();

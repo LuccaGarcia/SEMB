@@ -5,9 +5,9 @@
 
 // -------- Commands --------
 
-#define IR_C_OK 0x00FF02FD
-#define IR_C_RIGHT 0x00FFC23D
-#define IR_C_LEFT 0x00FF22DD
+#define IR_C_OK 2
+#define IR_C_RIGHT 194
+#define IR_C_LEFT 94
 #define IR_C_UP 0x00FF629D
 #define IR_C_DOWN 0x00FFA857
 

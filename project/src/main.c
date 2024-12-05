@@ -21,6 +21,7 @@
 
 volatile ir_event_t event_buffer[IR_BUFFER_SIZE]; // Buffer to store events
 volatile uint16_t event_count = 0;                // Number of events stored
+volatile uint8_t ir_command = 0;
 
 static void prvSetupHardware(void);
 static void prvLaunchRTOS();
@@ -68,10 +69,15 @@ void update_canvas(const struct game_state *gs) {
 
 static void prvGameLogicTask(void *pvParameters) {
   (void)pvParameters; // Not used by task
+  uint16_t rect_color_1 =
+      (uint16_t)PICO_SCANVIDEO_PIXEL_FROM_RGB5(0x42, 0xba, 0xff);
+
+  uint16_t rect_color_2 =
+      (uint16_t)PICO_SCANVIDEO_PIXEL_FROM_RGB5(0xAC, 0x11, 0x22);
 
   struct game_state gs = {
       .bg_color = (uint16_t)PICO_SCANVIDEO_PIXEL_FROM_RGB5(0xc7, 0xff, 0xdd),
-      .rect_color = (uint16_t)PICO_SCANVIDEO_PIXEL_FROM_RGB5(0x42, 0xba, 0xff),
+      .rect_color = rect_color_1,
       .padding_x = 4,
       .padding_y = 10,
       .rect_x = 20,
@@ -90,6 +96,12 @@ static void prvGameLogicTask(void *pvParameters) {
   for (;;) {
     // Update game state
     update_game_state(&gs);
+    if (ir_command == IR_C_RIGHT) {
+      gs.rect_color = rect_color_1;
+    }
+    if (ir_command == IR_C_LEFT) {
+      gs.rect_color = rect_color_2;
+    }
 
     // Draw the updated state to the canvas
     update_canvas(&gs);
@@ -184,7 +196,6 @@ static void vDecodeTimerCallback(TimerHandle_t xTimer) {
     uint64_t latest_event_time = event_buffer[event_count - 1].timestamp;
     if (current_time - latest_event_time > IR_TIMEOUT_MS) { // 10ms inactivity
       uint32_t raw_message = process_ir_buffer(); // Decode the buffered events
-
       if (!raw_message) {
         return;
       }
@@ -197,10 +208,9 @@ static void vDecodeTimerCallback(TimerHandle_t xTimer) {
       bool cmd_valid = ((command ^ cmd_inv) == 0xFF);
       bool addr_valid = ((addr ^ addr_inv) == 0xFF);
 
-      printf("decoded addr: %d, valid: %s\n", addr,
-             addr_valid ? "True" : "False");
-      printf("decoded cmd: %d, valid: %s\n", command,
-             cmd_valid ? "True" : "False");
+      if (cmd_valid && addr_valid) {
+        ir_command = command;
+      }
     }
   }
 }

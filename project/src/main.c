@@ -56,42 +56,88 @@ void update_canvas(const struct game_state *gs) {
 
   uint16_t *canvas = vga_get_canvas();
 
-  // Clear the old rectangle
-  vga_draw_rectangle_filled(canvas, gs->rect_x - gs->v_x, gs->rect_y - gs->v_y,
-                            gs->rect_w, gs->rect_h, gs->bg_color);
 
-  // Draw the new rectangle
-  vga_draw_rectangle_filled(canvas, gs->rect_x, gs->rect_y, gs->rect_w,
-                            gs->rect_h, gs->rect_color);
+  // Clear the old ball
+  vga_draw_rectangle_filled(canvas, gs->Ball.x - gs->Ball.v_x,
+                            gs->Ball.y - gs->Ball.v_y, gs->Ball.w, gs->Ball.h,
+                            gs->bg_color);
+
+  // Clear the old player 
+  vga_draw_rectangle_filled(canvas, gs->Player.x, gs->Player.y, gs->Player.w,
+                            gs->Player.h, gs->bg_color);
+
+  // Clear the old AI
+  vga_draw_rectangle_filled(canvas, gs->AI.x, gs->AI.y, gs->AI.w,
+                            gs->AI.h, gs->bg_color);                      
+
+  // Draw the new ball
+  vga_draw_rectangle_filled(canvas, gs->Ball.x, gs->Ball.y, gs->Ball.w,
+                            gs->Ball.h, gs->Ball.color);
+
+  // Draw the new player
+  vga_draw_rectangle_filled(canvas, gs->Player.x, gs->Player.y, gs->Player.w,
+                            gs->Player.h, gs->Player.color);
+  
+  // Draw the new AI
+  vga_draw_rectangle_filled(canvas, gs->AI.x, gs->AI.y, gs->AI.w,
+                            gs->AI.h, gs->AI.color);
 
   mutex_exit(&render_sync_mutex);
 }
 
 static void prvGameLogicTask(void *pvParameters) {
   (void)pvParameters; // Not used by task
-  uint16_t rect_color_1 =
+  uint16_t ball_color =
       (uint16_t)PICO_SCANVIDEO_PIXEL_FROM_RGB5(0x42, 0xba, 0xff);
 
-  uint16_t rect_color_2 =
+  uint16_t player_color =
       (uint16_t)PICO_SCANVIDEO_PIXEL_FROM_RGB5(0xAC, 0x11, 0x22);
+  
+  uint16_t AI_color =
+      (uint16_t)PICO_SCANVIDEO_PIXEL_FROM_RGB5(0xDC, 0x01, 0x29);
 
   uint16_t bg_color_1 =
       (uint16_t)PICO_SCANVIDEO_PIXEL_FROM_RGB5(0xc7, 0xff, 0xdd);
 
-  uint16_t bg_color_2 =
-      (uint16_t)PICO_SCANVIDEO_PIXEL_FROM_RGB5(0xAB, 0x00, 0x30);
+
+  struct pong_rect ball = {
+      .x = 20,
+      .y = 20,
+      .w = 20,
+      .h = 20,
+      .color = ball_color,
+      .v_x = 2,
+      .v_y = 2,
+  };
+
+  struct pong_rect player = {
+      .x = 60,
+      .y = 60,
+      .w = 20,
+      .h = 80,
+      .color = player_color,
+      .v_x = 2,
+      .v_y = 2,
+  };
+
+  struct pong_rect AI = {
+      .x = 220,
+      .y = 220,
+      .w = 20,
+      .h = 80,
+      .color = AI_color,
+      .v_x = 2,
+      .v_y = 2,
+  };
+  
 
   struct game_state gs = {
       .bg_color = bg_color_1,
-      .rect_color = rect_color_1,
       .padding_x = 4,
       .padding_y = 10,
-      .rect_x = 20,
-      .rect_y = 20,
-      .rect_w = 20,
-      .rect_h = 20,
-      .v_x = 2,
-      .v_y = 2,
+      .Ball = ball,
+      .Player = player,
+      .AI = AI,
       .canvas_w = CANVAS_WIDTH,
       .canvas_h = CANVAS_HEIGHT,
   };
@@ -102,19 +148,19 @@ static void prvGameLogicTask(void *pvParameters) {
   for (;;) {
     // Update game state
     update_game_state(&gs);
-    if (ir_command == IR_C_RIGHT) {
-      gs.rect_color = rect_color_1;
-      gs.bg_color = bg_color_1;
-    } else if (ir_command == IR_C_LEFT) {
-      gs.rect_color = rect_color_2;
-      gs.bg_color = bg_color_2;
-    } else if (ir_command == IR_C_UP) {
-      gs.v_x *= -1;
-      ir_command = IR_C_OK;
-    } else if (ir_command == IR_C_DOWN) {
-      gs.v_y *= -1;
-      ir_command = IR_C_OK;
-    }
+//    if (ir_command == IR_C_RIGHT) {
+//      gs.rect_color = rect_color_1;
+//      gs.bg_color = bg_color_1;
+//    } else if (ir_command == IR_C_LEFT) {
+//      gs.rect_color = rect_color_2;
+//      gs.bg_color = bg_color_2;
+//    } else if (ir_command == IR_C_UP) {
+//      gs.v_x *= -1;
+//      ir_command = IR_C_OK;
+//    } else if (ir_command == IR_C_DOWN) {
+//      gs.v_y *= -1;
+//      ir_command = IR_C_OK;
+//    }
 
     // Draw the updated state to the canvas
     update_canvas(&gs);

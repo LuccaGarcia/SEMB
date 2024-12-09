@@ -75,8 +75,14 @@ static void prvGameLogicTask(void *pvParameters) {
   uint16_t rect_color_2 =
       (uint16_t)PICO_SCANVIDEO_PIXEL_FROM_RGB5(0xAC, 0x11, 0x22);
 
+  uint16_t bg_color_1 =
+      (uint16_t)PICO_SCANVIDEO_PIXEL_FROM_RGB5(0xc7, 0xff, 0xdd);
+
+  uint16_t bg_color_2 =
+      (uint16_t)PICO_SCANVIDEO_PIXEL_FROM_RGB5(0xAB, 0x00, 0x30);
+
   struct game_state gs = {
-      .bg_color = (uint16_t)PICO_SCANVIDEO_PIXEL_FROM_RGB5(0xc7, 0xff, 0xdd),
+      .bg_color = bg_color_1,
       .rect_color = rect_color_1,
       .padding_x = 4,
       .padding_y = 10,
@@ -98,9 +104,16 @@ static void prvGameLogicTask(void *pvParameters) {
     update_game_state(&gs);
     if (ir_command == IR_C_RIGHT) {
       gs.rect_color = rect_color_1;
-    }
-    if (ir_command == IR_C_LEFT) {
+      gs.bg_color = bg_color_1;
+    } else if (ir_command == IR_C_LEFT) {
       gs.rect_color = rect_color_2;
+      gs.bg_color = bg_color_2;
+    } else if (ir_command == IR_C_UP) {
+      gs.v_x *= -1;
+      ir_command = IR_C_OK;
+    } else if (ir_command == IR_C_DOWN) {
+      gs.v_y *= -1;
+      ir_command = IR_C_OK;
     }
 
     // Draw the updated state to the canvas

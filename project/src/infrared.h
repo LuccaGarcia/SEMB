@@ -7,19 +7,19 @@
 
 #define IR_C_OK 2
 #define IR_C_RIGHT 194
-#define IR_C_LEFT 94
-#define IR_C_UP 0x00FF629D
-#define IR_C_DOWN 0x00FFA857
+#define IR_C_LEFT 34
+#define IR_C_UP 98
+#define IR_C_DOWN 168
 
-#define IR_C_N1 0x00FF6897
-#define IR_C_N2 0x00FF9867
-#define IR_C_N3 0x00FFB04F
-#define IR_C_N4 0x00FF30CF
-#define IR_C_N5 0x00FF18E7
-#define IR_C_N6 0x00FF7A85
-#define IR_C_N7 0x00FF10EF
-#define IR_C_N8 0x00FF38C7
-#define IR_C_N9 0x00FF5AA5
+#define IR_C_N1 104
+#define IR_C_N2 152
+#define IR_C_N3 176
+#define IR_C_N4 48
+#define IR_C_N5 24
+#define IR_C_N6 122
+#define IR_C_N7 16
+#define IR_C_N8 56
+#define IR_C_N9 90
 
 // -------- Commands --------
 

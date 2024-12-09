@@ -15,6 +15,8 @@ uint16_t *vga_get_next_canvas_slice(uint16_t *canvas);
 
 void vga_init(void);
 
+void vga_clear_canvas(uint16_t *canvas);
+
 void vga_render_scanline(struct scanvideo_scanline_buffer *dest,
                          uint16_t *canvas_slice);
 

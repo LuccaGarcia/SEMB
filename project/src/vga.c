@@ -24,9 +24,9 @@ void vga_init() {
 uint16_t *vga_get_canvas() {
   static uint16_t canvas[320 * 240] = {0};
 
-  //TODO: Discover why malloc fails
+  // TODO: Discover why malloc fails
   //
-  // Initialize canvas if not already done
+  //  Initialize canvas if not already done
   /* if (canvas == NULL) { */
   /*   canvas = (uint16_t *)malloc(sizeof(uint16_t) * CANVAS_SIZE); */
   /*   if (canvas == NULL) { */
@@ -53,6 +53,12 @@ uint16_t *vga_get_next_canvas_slice(uint16_t *canvas) {
   }
 
   return &canvas[current_row_index * CANVAS_WIDTH];
+}
+
+void vga_clear_canvas(uint16_t *canvas) {
+  for (int i = 0; i < CANVAS_WIDTH * CANVAS_HEIGHT; i++) {
+    canvas[i] = 0;
+  }
 }
 
 void vga_render_scanline(struct scanvideo_scanline_buffer *dest,

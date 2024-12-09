@@ -36,7 +36,7 @@ void render_loop() {
     struct scanvideo_scanline_buffer *scanline_buffer =
         scanvideo_begin_scanline_generation(true);
 
-    mutex_enter_blocking(&render_sync_mutex);
+    /* mutex_enter_blocking(&render_sync_mutex); */
 
     uint16_t *canvas = vga_get_canvas();
 
@@ -44,7 +44,7 @@ void render_loop() {
     uint16_t *current_slice = vga_get_next_canvas_slice(canvas);
     vga_render_scanline(scanline_buffer, current_slice);
 
-    mutex_exit(&render_sync_mutex);
+    /* mutex_exit(&render_sync_mutex); */
 
     // End scanline generation
     scanvideo_end_scanline_generation(scanline_buffer);
@@ -52,23 +52,11 @@ void render_loop() {
 }
 
 void update_canvas(const struct game_state *gs) {
-  mutex_enter_blocking(&render_sync_mutex);
+  /* mutex_enter_blocking(&render_sync_mutex); */
 
   uint16_t *canvas = vga_get_canvas();
 
-
-  // Clear the old ball
-  vga_draw_rectangle_filled(canvas, gs->Ball.x - gs->Ball.v_x,
-                            gs->Ball.y - gs->Ball.v_y, gs->Ball.w, gs->Ball.h,
-                            gs->bg_color);
-
-  // Clear the old player 
-  vga_draw_rectangle_filled(canvas, gs->Player.x, gs->Player.y, gs->Player.w,
-                            gs->Player.h, gs->bg_color);
-
-  // Clear the old AI
-  vga_draw_rectangle_filled(canvas, gs->AI.x, gs->AI.y, gs->AI.w,
-                            gs->AI.h, gs->bg_color);                      
+  vga_clear_canvas(canvas);
 
   // Draw the new ball
   vga_draw_rectangle_filled(canvas, gs->Ball.x, gs->Ball.y, gs->Ball.w,
@@ -77,12 +65,12 @@ void update_canvas(const struct game_state *gs) {
   // Draw the new player
   vga_draw_rectangle_filled(canvas, gs->Player.x, gs->Player.y, gs->Player.w,
                             gs->Player.h, gs->Player.color);
-  
-  // Draw the new AI
-  vga_draw_rectangle_filled(canvas, gs->AI.x, gs->AI.y, gs->AI.w,
-                            gs->AI.h, gs->AI.color);
 
-  mutex_exit(&render_sync_mutex);
+  // Draw the new AI
+  vga_draw_rectangle_filled(canvas, gs->AI.x, gs->AI.y, gs->AI.w, gs->AI.h,
+                            gs->AI.color);
+
+  /* mutex_exit(&render_sync_mutex); */
 }
 
 static void prvGameLogicTask(void *pvParameters) {
@@ -92,19 +80,17 @@ static void prvGameLogicTask(void *pvParameters) {
 
   uint16_t player_color =
       (uint16_t)PICO_SCANVIDEO_PIXEL_FROM_RGB5(0xAC, 0x11, 0x22);
-  
+
   uint16_t AI_color =
       (uint16_t)PICO_SCANVIDEO_PIXEL_FROM_RGB5(0xDC, 0x01, 0x29);
 
-  uint16_t bg_color_1 =
-      (uint16_t)PICO_SCANVIDEO_PIXEL_FROM_RGB5(0xc7, 0xff, 0xdd);
-
+  uint16_t bg_color_1 = 0;
 
   struct pong_rect ball = {
       .x = 20,
       .y = 20,
-      .w = 20,
-      .h = 20,
+      .w = 10,
+      .h = 10,
       .color = ball_color,
       .v_x = 2,
       .v_y = 2,
@@ -112,7 +98,7 @@ static void prvGameLogicTask(void *pvParameters) {
 
   struct pong_rect player = {
       .x = 60,
-      .y = 60,
+      .y = 100,
       .w = 20,
       .h = 80,
       .color = player_color,
@@ -122,14 +108,13 @@ static void prvGameLogicTask(void *pvParameters) {
 
   struct pong_rect AI = {
       .x = 220,
-      .y = 220,
+      .y = 100,
       .w = 20,
       .h = 80,
       .color = AI_color,
       .v_x = 2,
       .v_y = 2,
   };
-  
 
   struct game_state gs = {
       .bg_color = bg_color_1,
@@ -148,19 +133,20 @@ static void prvGameLogicTask(void *pvParameters) {
   for (;;) {
     // Update game state
     update_game_state(&gs);
-//    if (ir_command == IR_C_RIGHT) {
-//      gs.rect_color = rect_color_1;
-//      gs.bg_color = bg_color_1;
-//    } else if (ir_command == IR_C_LEFT) {
-//      gs.rect_color = rect_color_2;
-//      gs.bg_color = bg_color_2;
-//    } else if (ir_command == IR_C_UP) {
-//      gs.v_x *= -1;
-//      ir_command = IR_C_OK;
-//    } else if (ir_command == IR_C_DOWN) {
-//      gs.v_y *= -1;
-//      ir_command = IR_C_OK;
-//    }
+
+    if (ir_command == IR_C_UP) {
+      gs.Player.y -= 20;
+      ir_command = IR_C_OK;
+    } else if (ir_command == IR_C_DOWN) {
+      gs.Player.y += 20;
+      ir_command = IR_C_OK;
+    }
+
+    if (gs.Ball.y < gs.AI.y) {
+      gs.AI.y -= 2;
+    } else if (gs.Ball.y > gs.AI.y) {
+      gs.AI.y += 2;
+    }
 
     // Draw the updated state to the canvas
     update_canvas(&gs);

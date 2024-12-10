@@ -261,27 +261,27 @@ int main(void) {
   };
 
   struct pong_rect player = {
-      .x = 60,
-      .x_old = 60,
+      .x = 20,
+      .x_old = 20,
       .y = 100,
       .y_old = 100,
       .w = 5,
       .h = 50,
       .color = player_color,
-      .v_x = 2,
-      .v_y = 2,
+      .v_x = 20,
+      .v_y = 3,
   };
 
   struct pong_rect AI = {
-      .x = 220,
-      .x_old = 220,
+      .x = 300,
+      .x_old = 300,
       .y = 100,
       .y_old = 100,
       .w = 5,
       .h = 50,
       .color = AI_color,
-      .v_x = 2,
-      .v_y = 2,
+      .v_x = 3,
+      .v_y = 3,
   };
 
   struct game_state gs = {

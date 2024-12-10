@@ -59,19 +59,20 @@ void gs_update_ball(struct game_state *gs) {
 
 void gs_update_player(struct game_state *gs, int move_direction) {
   // Move the player paddle
-  update_paddle_position(&gs->player, move_direction * 20, gs->padding_y,
-                         gs->canvas_h);
+  update_paddle_position(&gs->player, move_direction * gs->player.v_y,
+                         gs->padding_y, gs->canvas_h);
 }
 
 void gs_update_ai(struct game_state *gs) {
   // Determine AI paddle movement
   int move_direction = 0;
   if (gs->ball.y < gs->ai.y) {
-    move_direction = -2; // Move paddle up
+    move_direction = -1; // Move paddle up
   } else if (gs->ball.y > gs->ai.y + gs->ai.h) {
-    move_direction = 2; // Move paddle down
+    move_direction = 1; // Move paddle up; // Move paddle down
   }
 
   // Move the AI paddle
-  update_paddle_position(&gs->ai, move_direction, gs->padding_y, gs->canvas_h);
+  update_paddle_position(&gs->ai, move_direction * gs->ai.v_y, gs->padding_y,
+                         gs->canvas_h);
 }

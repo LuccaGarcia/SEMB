@@ -1,47 +1,77 @@
 #include "game.h"
 
-void update_game_state(struct game_state *gs) {
+void update_paddle_position(pong_rect *paddle, int move_direction,
+                            uint16_t padding_y, uint16_t canvas_h) {
+  // Move the paddle based on the input direction
+  paddle->y_old = paddle->y;
+  paddle->y += move_direction;
+
+  // Bounds checking to keep the paddle within the canvas
+  if (paddle->y < padding_y) {
+    paddle->y = padding_y; // Ensure paddle stays within upper bound
+  } else if (paddle->y + paddle->h > canvas_h - padding_y) {
+    paddle->y = canvas_h - paddle->h - padding_y; // Lower bound
+  }
+}
+
+void gs_update_ball(struct game_state *gs) {
+  // Update ball position
+  gs->ball.x_old = gs->ball.x;
+  gs->ball.y_old = gs->ball.y;
+
+  gs->ball.x += gs->ball.v_x;
+  gs->ball.y += gs->ball.v_y;
+
   // Check horizontal bounds
-
-  if (gs->Ball.x + gs->Ball.w > gs->canvas_w - gs->padding_x) {
-    gs->Ball.x = gs->canvas_w - gs->Ball.w - gs->padding_x; // Correct position
-    gs->Ball.v_x *= -1;                                     // Reverse velocity
-  } else if (gs->Ball.x < gs->padding_x) {
-    gs->Ball.x = gs->padding_x; // Correct position
-    gs->Ball.v_x *= -1;         // Reverse velocity
+  if (gs->ball.x + gs->ball.w > gs->canvas_w - gs->padding_x) {
+    gs->ball.x = gs->canvas_w - gs->ball.w - gs->padding_x;
+    gs->ball.v_x *= -1; // Reverse velocity
+  } else if (gs->ball.x < gs->padding_x) {
+    gs->ball.x = gs->padding_x;
+    gs->ball.v_x *= -1; // Reverse velocity
   }
 
-  if (gs->Ball.y + gs->Ball.h > gs->canvas_h - gs->padding_y) {
-    gs->Ball.y = gs->canvas_h - gs->Ball.h - gs->padding_y; // Correct position
-    gs->Ball.v_y *= -1;                                     // Reverse velocity
-  } else if (gs->Ball.y < gs->padding_y) {
-    gs->Ball.y = gs->padding_y; // Correct position
-    gs->Ball.v_y *= -1;         // Reverse velocity
-  }
-  // Update position
-
-  gs->Ball.x += gs->Ball.v_x;
-  gs->Ball.y += gs->Ball.v_y;
-
-  // bounces the ball back if it hits the player
-  if (gs->Ball.x < gs->Player.x + gs->Player.w && gs->Ball.x + gs->Ball.w > gs->Player.x && gs->Ball.y < gs->Player.y + gs->Player.h && gs->Ball.y + gs->Ball.h > gs->Player.y) {
-    gs->Ball.x = gs->Player.x + gs->Player.w;
-    gs->Ball.v_x *= -1;
+  // Check vertical bounds
+  if (gs->ball.y + gs->ball.h > gs->canvas_h - gs->padding_y) {
+    gs->ball.y = gs->canvas_h - gs->ball.h - gs->padding_y;
+    gs->ball.v_y *= -1; // Reverse velocity
+  } else if (gs->ball.y < gs->padding_y) {
+    gs->ball.y = gs->padding_y;
+    gs->ball.v_y *= -1; // Reverse velocity
   }
 
-  // bounces the ball back if it hits the AI
-  if (gs->Ball.x < gs->AI.x + gs->AI.w && gs->Ball.x + gs->Ball.w > gs->AI.x && gs->Ball.y < gs->AI.y + gs->AI.h && gs->Ball.y + gs->Ball.h > gs->AI.y) {
-    gs->Ball.x = gs->AI.x - gs->Ball.w;
-    gs->Ball.v_x *= -1;
+  // Check collision with player paddle
+  if (gs->ball.x < gs->player.x + gs->player.w &&
+      gs->ball.x + gs->ball.w > gs->player.x &&
+      gs->ball.y < gs->player.y + gs->player.h &&
+      gs->ball.y + gs->ball.h > gs->player.y) {
+    gs->ball.x = gs->player.x + gs->player.w; // Place ball at paddle edge
+    gs->ball.v_x *= -1;                       // Reverse velocity
   }
 
-  
+  // Check collision with AI paddle
+  if (gs->ball.x < gs->ai.x + gs->ai.w && gs->ball.x + gs->ball.w > gs->ai.x &&
+      gs->ball.y < gs->ai.y + gs->ai.h && gs->ball.y + gs->ball.h > gs->ai.y) {
+    gs->ball.x = gs->ai.x - gs->ball.w; // Place ball at paddle edge
+    gs->ball.v_x *= -1;                 // Reverse velocity
+  }
+}
 
+void gs_update_player(struct game_state *gs, int move_direction) {
+  // Move the player paddle
+  update_paddle_position(&gs->player, move_direction * 20, gs->padding_y,
+                         gs->canvas_h);
+}
 
-  //! TODO implement player colision with ball
-  //! TODO implement AI colision with ball
-  //! TODO implement AI movement
-  //! TODO implement player movement
+void gs_update_ai(struct game_state *gs) {
+  // Determine AI paddle movement
+  int move_direction = 0;
+  if (gs->ball.y < gs->ai.y) {
+    move_direction = -2; // Move paddle up
+  } else if (gs->ball.y > gs->ai.y + gs->ai.h) {
+    move_direction = 2; // Move paddle down
+  }
 
-
+  // Move the AI paddle
+  update_paddle_position(&gs->ai, move_direction, gs->padding_y, gs->canvas_h);
 }

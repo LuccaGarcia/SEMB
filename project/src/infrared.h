@@ -27,6 +27,7 @@
 #define IR_PULSE_TIME 562    // Single data pulse duration
 #define IR_START_PULSE 9300  // Start pulse duration (9ms)
 #define IR_START_SPACE 4500  // Start space duration (4.5ms)
+#define IR_REPEAT_SPACE 2250 // Start space duration (2.5ms)
 #define IR_TIMEOUT_MS 10000  // Timeout between messages
 #define IR_TIMER_PERIOD 1000 // Period of the IR timeout timer
 #define IR_LOGIC_0_SPACE (2 * IR_PULSE_TIME) // Space duration for logic 0

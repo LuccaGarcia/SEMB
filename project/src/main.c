@@ -18,6 +18,7 @@
 #include "vga.h"
 
 #define mainGAME_LOGIC_TASK_PRIORITY (tskIDLE_PRIORITY + 1)
+#define mainGAME_DRAW_TASK_PRIORITY (tskIDLE_PRIORITY + 2)
 
 volatile ir_event_t event_buffer[IR_BUFFER_SIZE]; // Buffer to store events
 volatile uint16_t event_count = 0;                // Number of events stored
@@ -27,6 +28,7 @@ static void prvSetupHardware(void);
 static void prvLaunchRTOS();
 
 static struct mutex render_sync_mutex; // Probably unnecessary
+static struct mutex game_state_mutex;  // Probably unnecessary
 
 void render_loop() {
   vga_init();
@@ -36,7 +38,7 @@ void render_loop() {
     struct scanvideo_scanline_buffer *scanline_buffer =
         scanvideo_begin_scanline_generation(true);
 
-    /* mutex_enter_blocking(&render_sync_mutex); */
+    mutex_enter_blocking(&render_sync_mutex);
 
     uint16_t *canvas = vga_get_canvas();
 
@@ -44,7 +46,7 @@ void render_loop() {
     uint16_t *current_slice = vga_get_next_canvas_slice(canvas);
     vga_render_scanline(scanline_buffer, current_slice);
 
-    /* mutex_exit(&render_sync_mutex); */
+    mutex_exit(&render_sync_mutex);
 
     // End scanline generation
     scanvideo_end_scanline_generation(scanline_buffer);
@@ -52,111 +54,65 @@ void render_loop() {
 }
 
 void update_canvas(const struct game_state *gs) {
-  /* mutex_enter_blocking(&render_sync_mutex); */
-
+  pong_rect objects[] = {gs->ball, gs->player, gs->ai};
   uint16_t *canvas = vga_get_canvas();
-
-  vga_clear_canvas(canvas);
-
-  // Draw the new ball
-  vga_draw_rectangle_filled(canvas, gs->Ball.x, gs->Ball.y, gs->Ball.w,
-                            gs->Ball.h, gs->Ball.color);
-
-  // Draw the new player
-  vga_draw_rectangle_filled(canvas, gs->Player.x, gs->Player.y, gs->Player.w,
-                            gs->Player.h, gs->Player.color);
-
-  // Draw the new AI
-  vga_draw_rectangle_filled(canvas, gs->AI.x, gs->AI.y, gs->AI.w, gs->AI.h,
-                            gs->AI.color);
-
-  /* mutex_exit(&render_sync_mutex); */
+  // Render all objects
+  for (uint i = 0; i < sizeof(objects) / sizeof(objects[0]); i++) {
+    mutex_enter_blocking(&render_sync_mutex);
+    {
+      mutex_enter_blocking(&game_state_mutex);
+      { vga_draw_rectangle_filled(canvas, &objects[i]); }
+      mutex_exit(&game_state_mutex);
+    }
+    mutex_exit(&render_sync_mutex);
+  }
 }
 
 static void prvGameLogicTask(void *pvParameters) {
-  (void)pvParameters; // Not used by task
-  uint16_t ball_color =
-      (uint16_t)PICO_SCANVIDEO_PIXEL_FROM_RGB5(0x42, 0xba, 0xff);
-
-  uint16_t player_color =
-      (uint16_t)PICO_SCANVIDEO_PIXEL_FROM_RGB5(0xAC, 0x11, 0x22);
-
-  uint16_t AI_color =
-      (uint16_t)PICO_SCANVIDEO_PIXEL_FROM_RGB5(0xDC, 0x01, 0x29);
-
-  uint16_t bg_color_1 = 0;
-
-  struct pong_rect ball = {
-      .x = 20,
-      .y = 20,
-      .w = 10,
-      .h = 10,
-      .color = ball_color,
-      .v_x = 2,
-      .v_y = 2,
-  };
-
-  struct pong_rect player = {
-      .x = 60,
-      .y = 100,
-      .w = 20,
-      .h = 80,
-      .color = player_color,
-      .v_x = 2,
-      .v_y = 2,
-  };
-
-  struct pong_rect AI = {
-      .x = 220,
-      .y = 100,
-      .w = 20,
-      .h = 80,
-      .color = AI_color,
-      .v_x = 2,
-      .v_y = 2,
-  };
-
-  struct game_state gs = {
-      .bg_color = bg_color_1,
-      .padding_x = 4,
-      .padding_y = 10,
-      .Ball = ball,
-      .Player = player,
-      .AI = AI,
-      .canvas_w = CANVAS_WIDTH,
-      .canvas_h = CANVAS_HEIGHT,
-  };
+  struct game_state *gs = pvParameters; // Not used by task
 
   TickType_t xLastWakeTime = xTaskGetTickCount();
   const TickType_t xFrequency = pdMS_TO_TICKS(33);
 
   for (;;) {
-    // Update game state
-    update_game_state(&gs);
+    int move_direction = 0; // Default: no movement
 
+    // Map IR commands to movement
     if (ir_command == IR_C_UP) {
-      gs.Player.y -= 20;
-      ir_command = IR_C_OK;
+      move_direction = -1;  // Up
+      ir_command = IR_C_OK; // Reset command
     } else if (ir_command == IR_C_DOWN) {
-      gs.Player.y += 20;
-      ir_command = IR_C_OK;
+      move_direction = 1;   // Down
+      ir_command = IR_C_OK; // Reset command
     }
 
-    if (gs.Ball.y < gs.AI.y) {
-      gs.AI.y -= 2;
-    } else if (gs.Ball.y > gs.AI.y) {
-      gs.AI.y += 2;
+    mutex_enter_blocking(&game_state_mutex);
+    {
+      gs_update_player(gs, move_direction);
+      gs_update_ai(gs);
+      gs_update_ball(gs);
     }
+    mutex_exit(&game_state_mutex);
 
-    // Draw the updated state to the canvas
-    update_canvas(&gs);
+    vTaskDelayUntil(&xLastWakeTime, xFrequency);
+  }
+}
 
+static void prvGameDrawCanvasTask(void *pvParameters) {
+  struct game_state *gs = pvParameters; // Not used by task
+
+  TickType_t xLastWakeTime = xTaskGetTickCount();
+  const TickType_t xFrequency = pdMS_TO_TICKS(25);
+
+  for (;;) {
+    update_canvas(gs);
     vTaskDelayUntil(&xLastWakeTime, xFrequency);
   }
 }
 
 // Function to decode NEC protocol from buffered events
 uint32_t process_ir_buffer() {
+  static uint32_t last_message = 0;
   if (event_count < 3) {
     printf("Insufficient events to decode\n");
     event_count = 0;
@@ -173,8 +129,20 @@ uint32_t process_ir_buffer() {
       !(event_buffer[1].event_kind & GPIO_IRQ_EDGE_RISE) ||
       !(event_buffer[2].event_kind & GPIO_IRQ_EDGE_FALL) ||
       !IR_IN_TIMING_WINDOW(start_pulse_duration, IR_START_PULSE,
-                           IR_TIMING_SLACK_US) ||
-      !IR_IN_TIMING_WINDOW(start_space_duration, IR_START_SPACE,
+                           IR_TIMING_SLACK_US)) {
+    event_count = 0;
+    printf("Invalid start sequence. Message discarded.\n");
+    return 0;
+  }
+
+  if (IR_IN_TIMING_WINDOW(start_space_duration, IR_REPEAT_SPACE,
+                          IR_TIMING_SLACK_US)) {
+    event_count = 0;
+    printf("Repeat message");
+    return last_message;
+  }
+
+  if (!IR_IN_TIMING_WINDOW(start_space_duration, IR_START_SPACE,
                            IR_TIMING_SLACK_US)) {
     event_count = 0;
     printf("Invalid start sequence. Message discarded.\n");
@@ -215,6 +183,7 @@ uint32_t process_ir_buffer() {
 
   // Print decoded data
   event_count = 0; // Reset buffer
+  last_message = message;
   return message;
 }
 
@@ -265,11 +234,72 @@ int main(void) {
 
   prvSetupHardware();
 
+  mutex_init(&game_state_mutex);
   mutex_init(&render_sync_mutex);
+
   multicore_launch_core1(render_loop);
 
-  xTaskCreate(prvGameLogicTask, "Game Logic", configMINIMAL_STACK_SIZE, NULL,
+  uint16_t ball_color =
+      (uint16_t)PICO_SCANVIDEO_PIXEL_FROM_RGB5(0x42, 0xba, 0xff);
+
+  uint16_t player_color =
+      (uint16_t)PICO_SCANVIDEO_PIXEL_FROM_RGB5(0xAC, 0x11, 0x22);
+
+  uint16_t AI_color =
+      (uint16_t)PICO_SCANVIDEO_PIXEL_FROM_RGB5(0xDC, 0x01, 0x29);
+
+  uint16_t bg_color_1 = 0;
+
+  struct pong_rect ball = {
+      .x = 20,
+      .y = 20,
+      .w = 10,
+      .h = 10,
+      .color = ball_color,
+      .v_x = 2,
+      .v_y = 2,
+  };
+
+  struct pong_rect player = {
+      .x = 60,
+      .x_old = 60,
+      .y = 100,
+      .y_old = 100,
+      .w = 5,
+      .h = 50,
+      .color = player_color,
+      .v_x = 2,
+      .v_y = 2,
+  };
+
+  struct pong_rect AI = {
+      .x = 220,
+      .x_old = 220,
+      .y = 100,
+      .y_old = 100,
+      .w = 5,
+      .h = 50,
+      .color = AI_color,
+      .v_x = 2,
+      .v_y = 2,
+  };
+
+  struct game_state gs = {
+      .bg_color = bg_color_1,
+      .padding_x = 4,
+      .padding_y = 10,
+      .ball = ball,
+      .player = player,
+      .ai = AI,
+      .canvas_w = CANVAS_WIDTH,
+      .canvas_h = CANVAS_HEIGHT,
+  };
+
+  xTaskCreate(prvGameLogicTask, "GameLogic", configMINIMAL_STACK_SIZE, &gs,
               mainGAME_LOGIC_TASK_PRIORITY, NULL);
+
+  xTaskCreate(prvGameDrawCanvasTask, "GameDraw", configMINIMAL_STACK_SIZE, &gs,
+              mainGAME_DRAW_TASK_PRIORITY, NULL);
 
   TickType_t timer_period = pdMS_TO_TICKS(25);
   xIrDecodeTimer = xTimerCreate((const char *)"IrDecodeTimer", timer_period,

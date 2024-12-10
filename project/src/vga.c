@@ -3,6 +3,7 @@
 #include <pico/scanvideo/scanvideo_base.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "vga.h"
 
@@ -56,9 +57,7 @@ uint16_t *vga_get_next_canvas_slice(uint16_t *canvas) {
 }
 
 void vga_clear_canvas(uint16_t *canvas) {
-  for (int i = 0; i < CANVAS_WIDTH * CANVAS_HEIGHT; i++) {
-    canvas[i] = 0;
-  }
+  memset(canvas, 0, CANVAS_WIDTH * CANVAS_HEIGHT * sizeof(uint16_t));
 }
 
 void vga_render_scanline(struct scanvideo_scanline_buffer *dest,
@@ -73,25 +72,43 @@ void vga_render_scanline(struct scanvideo_scanline_buffer *dest,
   finalize_scanline_buffer(dest);
 }
 
-// Canvas Manipulation Functions
-void vga_draw_rectangle_filled(uint16_t *canvas, size_t x, size_t y,
-                               size_t width, size_t height, uint16_t color) {
-  for (size_t row = 0; row < height; row++) {
-    size_t canvas_y = y + row;
+void vga_draw_rectangle_filled(uint16_t *canvas, const pong_rect *rect) {
+  // Erase old rectangle by setting its pixels to 0
+  for (size_t row = 0; row < rect->h; row++) {
+    size_t canvas_y = rect->y_old + row;
     if (canvas_y >= CANVAS_HEIGHT)
       break;
 
-    for (size_t col = 0; col < width; col++) {
-      size_t canvas_x = x + col;
+    for (size_t col = 0; col < rect->w; col++) {
+      size_t canvas_x = rect->x_old + col;
+      if (canvas_x >= CANVAS_WIDTH)
+        break;
+
+      // Clear pixel if it is outside the new rectangle
+      if (canvas_x < rect->x || canvas_x >= rect->x + rect->w ||
+          canvas_y < rect->y || canvas_y >= rect->y + rect->h) {
+        size_t index = canvas_y * CANVAS_WIDTH + canvas_x;
+        canvas[index] = 0; // Clear pixel
+      }
+    }
+  }
+
+  // Draw new rectangle
+  for (size_t row = 0; row < rect->h; row++) {
+    size_t canvas_y = rect->y + row;
+    if (canvas_y >= CANVAS_HEIGHT)
+      break;
+
+    for (size_t col = 0; col < rect->w; col++) {
+      size_t canvas_x = rect->x + col;
       if (canvas_x >= CANVAS_WIDTH)
         break;
 
       size_t index = canvas_y * CANVAS_WIDTH + canvas_x;
-      canvas[index] = color;
+      canvas[index] = rect->color; // Set pixel to the rectangle's color
     }
   }
 }
-
 // Draw a rectangle with borders only
 void vga_draw_rectangle_border(uint16_t *canvas, size_t x, size_t y,
                                size_t width, size_t height, uint16_t color) {

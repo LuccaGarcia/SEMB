@@ -24,11 +24,11 @@ void gs_update_ball(struct game_state *gs) {
 
   // Check horizontal bounds
   if (gs->ball.x + gs->ball.w > gs->canvas_w - gs->padding_x) {
-    gs->ball.x = gs->canvas_w - gs->ball.w - gs->padding_x;
-    gs->ball.v_x *= -1; // Reverse velocity
+    gs_reset_ball(gs);
+    gs->player_score++;
   } else if (gs->ball.x < gs->padding_x) {
-    gs->ball.x = gs->padding_x;
-    gs->ball.v_x *= -1; // Reverse velocity
+    gs_reset_ball(gs);
+    gs->ai_score++;
   }
 
   // Check vertical bounds
@@ -75,4 +75,13 @@ void gs_update_ai(struct game_state *gs) {
   // Move the AI paddle
   update_paddle_position(&gs->ai, move_direction * gs->ai.v_y, gs->padding_y,
                          gs->canvas_h);
+}
+
+// function that calculates if the ball is going to hit the left or right wall
+// and resets the game and the ball spwaning at the center
+void gs_reset_ball(struct game_state *gs) {
+  gs->ball.x = gs->canvas_w / 2;
+  gs->ball.y = gs->canvas_h / 2;
+  gs->ball.v_x = 2;
+  gs->ball.v_y = 2;
 }

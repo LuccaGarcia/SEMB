@@ -31,10 +31,18 @@ struct game_state {
   pong_rect ball;
   pong_rect player;
   pong_rect ai;
+  
+  pong_rect ai_scoreboard;
+  pong_rect player_scoreboard;
+
+  uint16_t player_score;
+  uint16_t ai_score;
 };
 
 void gs_update_player(struct game_state *gs, int move_direction);
 void gs_update_ball(struct game_state *gs);
 void gs_update_ai(struct game_state *gs);
+void gs_reset_ball(struct game_state *gs);
+
 
 #endif

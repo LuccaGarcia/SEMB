@@ -54,18 +54,20 @@ void render_loop() {
 }
 
 void update_canvas(const struct game_state *gs) {
-  pong_rect objects[] = {gs->ball, gs->player, gs->ai};
+  pong_rect objects[] = {gs->ai_scoreboard,gs->player_scoreboard, gs->ball, gs->player, gs->ai};
   uint16_t *canvas = vga_get_canvas();
   // Render all objects
   for (uint i = 0; i < sizeof(objects) / sizeof(objects[0]); i++) {
     mutex_enter_blocking(&render_sync_mutex);
     {
       mutex_enter_blocking(&game_state_mutex);
-      { vga_draw_rectangle_filled(canvas, &objects[i]); }
+      { vga_draw_rectangle_filled(canvas, &objects[i]);}
+
       mutex_exit(&game_state_mutex);
     }
     mutex_exit(&render_sync_mutex);
   }
+  //vTaskDelay(pdMS_TO_TICKS(5));
 }
 
 static void prvGameLogicTask(void *pvParameters) {
@@ -269,7 +271,7 @@ int main(void) {
       .h = 50,
       .color = player_color,
       .v_x = 20,
-      .v_y = 3,
+      .v_y = 5,
   };
 
   struct pong_rect AI = {
@@ -280,8 +282,44 @@ int main(void) {
       .w = 5,
       .h = 50,
       .color = AI_color,
-      .v_x = 3,
-      .v_y = 3,
+      .v_x = 2,
+      .v_y = 2,
+  };
+
+  struct pong_rect ai_scoreboard = {
+      .x =  170,
+      .x_old = 0,
+      .y = 20,
+      .y_old = 0,
+      .w = 50,
+      .h = 10,
+      .color = player_color,
+      .v_x = 20,
+      .v_y = 5,
+  };
+
+  struct pong_rect player_scoreboard = {
+      .x =  100,
+      .x_old = 0,
+      .y = 20,
+      .y_old = 0,
+      .w = 50,
+      .h = 10,
+      .color = player_color,
+      .v_x = 20,
+      .v_y = 5,
+  };
+
+  struct pong_rect point = {
+      .x =  100,
+      .x_old = 0,
+      .y = 20,
+      .y_old = 0,
+      .w = 5,
+      .h = 10,
+      .color = 0 ,
+      .v_x = 20,
+      .v_y = 5,
   };
 
   struct game_state gs = {
@@ -291,6 +329,10 @@ int main(void) {
       .ball = ball,
       .player = player,
       .ai = AI,
+      .player_scoreboard = player_scoreboard,
+      .ai_scoreboard = ai_scoreboard,
+      .player_score = 0,
+      .ai_score = 0,
       .canvas_w = CANVAS_WIDTH,
       .canvas_h = CANVAS_HEIGHT,
   };

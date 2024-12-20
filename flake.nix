@@ -28,6 +28,14 @@
         -c "program $1 verify reset exit"
       '';
 
+              
+              
+        openocd \
+        -f interface/cmsis-dap.cfg \
+        -f target/rp2040.cfg \
+        -c "adapter speed 5000" \
+        -c "program main.elf verify reset exit"
+
       serial-monitor-util = pkgs.writeShellScriptBin "monitor" ''
         minicom -D /dev/ttyACM0 -b 115200
       '';

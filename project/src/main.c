@@ -54,19 +54,71 @@ void render_loop() {
 }
 
 void update_canvas(const struct game_state *gs) {
-  pong_rect objects[] = {gs->ai_scoreboard,gs->player_scoreboard, gs->ball, gs->player, gs->ai};
+
+  static struct pong_rect draw_point = {
+    .x =  0,
+    .x_old = 0,
+    .y = 20,
+    .y_old = 0,
+    .w = 5,
+    .h = 10,
+    .color = (uint16_t)PICO_SCANVIDEO_PIXEL_FROM_RGB5(0xDC, 0x01, 0x29),
+    .v_x = 20,  
+    .v_y = 5,
+  };
+
+  pong_rect objects[] = {gs->ball, gs->player, gs->ai};
   uint16_t *canvas = vga_get_canvas();
   // Render all objects
   for (uint i = 0; i < sizeof(objects) / sizeof(objects[0]); i++) {
     mutex_enter_blocking(&render_sync_mutex);
     {
       mutex_enter_blocking(&game_state_mutex);
-      { vga_draw_rectangle_filled(canvas, &objects[i]);}
-
+        {vga_draw_rectangle_filled(canvas, &objects[i]);}
       mutex_exit(&game_state_mutex);
     }
     mutex_exit(&render_sync_mutex);
   }
+
+  draw_point.color = (uint16_t)PICO_SCANVIDEO_PIXEL_FROM_RGB5(0xAC, 0x11, 0x22);
+  for (uint i = 0 ; i < gs->ai_score; i++){
+
+      int pos = gs->draw_point_ai.x + i*10;
+      draw_point.x = pos;  
+
+    mutex_enter_blocking(&render_sync_mutex);
+    {
+      mutex_enter_blocking(&game_state_mutex);
+        { vga_draw_rectangle_filled(canvas, &draw_point);}
+      mutex_exit(&game_state_mutex);
+    }
+    mutex_exit(&render_sync_mutex);
+  }
+
+  draw_point.color = (uint16_t)PICO_SCANVIDEO_PIXEL_FROM_RGB5(0xDC, 0x01, 0x29);
+  for (uint i = 0; i < gs->player_score; i++){
+
+    int pos = gs->draw_point_player.x + i*10;
+    draw_point.x = pos;
+      
+    mutex_enter_blocking(&render_sync_mutex);
+    {
+      mutex_enter_blocking(&game_state_mutex);
+        {vga_draw_rectangle_filled(canvas, &draw_point);}
+      mutex_exit(&game_state_mutex);
+    }
+    mutex_exit(&render_sync_mutex);      
+
+  } 
+
+    //for (uint i = 0 ; i < gs->ai_score; i++){
+    //  gs->draw_point_ai.x += i*10;
+    //  vga_draw_rectangle_filled(canvas, &gs->draw_point_ai);
+    //}
+    //mutex_exit(&game_state_mutex);
+  
+  //mutex_exit(&render_sync_mutex);
+
   //vTaskDelay(pdMS_TO_TICKS(5));
 }
 
@@ -305,22 +357,35 @@ int main(void) {
       .y_old = 0,
       .w = 50,
       .h = 10,
-      .color = player_color,
+      .color = AI_color,
       .v_x = 20,
       .v_y = 5,
   };
 
-  struct pong_rect point = {
+  struct pong_rect draw_point_player = {
       .x =  100,
       .x_old = 0,
       .y = 20,
       .y_old = 0,
       .w = 5,
       .h = 10,
-      .color = 0 ,
+      .color = player_color,
       .v_x = 20,
       .v_y = 5,
   };
+
+  struct pong_rect draw_point_ai = {
+      .x =  170,
+      .x_old = 0,
+      .y = 20,
+      .y_old = 0,
+      .w = 5,
+      .h = 10,
+      .color = AI_color,
+      .v_x = 20,
+      .v_y = 5,
+  };
+
 
   struct game_state gs = {
       .bg_color = bg_color_1,
@@ -331,11 +396,14 @@ int main(void) {
       .ai = AI,
       .player_scoreboard = player_scoreboard,
       .ai_scoreboard = ai_scoreboard,
+      .draw_point_ai = draw_point_ai,
+      .draw_point_player = draw_point_player,
       .player_score = 0,
       .ai_score = 0,
       .canvas_w = CANVAS_WIDTH,
       .canvas_h = CANVAS_HEIGHT,
   };
+
 
   xTaskCreate(prvGameLogicTask, "GameLogic", configMINIMAL_STACK_SIZE, &gs,
               mainGAME_LOGIC_TASK_PRIORITY, NULL);

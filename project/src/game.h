@@ -35,6 +35,9 @@ struct game_state {
   pong_rect ai_scoreboard;
   pong_rect player_scoreboard;
 
+  pong_rect draw_point_player;
+  pong_rect draw_point_ai;
+
   uint16_t player_score;
   uint16_t ai_score;
 };

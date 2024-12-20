@@ -32,14 +32,14 @@ struct game_state {
   pong_rect player;
   pong_rect ai;
   
-  pong_rect ai_scoreboard;
-  pong_rect player_scoreboard;
-
+  
   pong_rect draw_point_player;
   pong_rect draw_point_ai;
 
   uint16_t player_score;
   uint16_t ai_score;
+
+  bool reset_score;
 };
 
 void gs_update_player(struct game_state *gs, int move_direction);

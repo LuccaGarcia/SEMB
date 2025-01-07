@@ -9,6 +9,7 @@
 // FreeRTOS
 #include <FreeRTOS.h>
 #include <stdlib.h>
+#include <string.h>
 #include <task.h>
 #include <timers.h>
 
@@ -51,34 +52,6 @@ void render_loop() {
     // End scanline generation
     scanvideo_end_scanline_generation(scanline_buffer);
   }
-}
-
-void reset_points(struct game_state *gs) {
-  static struct pong_rect draw_point = {
-      .x = 0,
-      .y = 20,
-      .w = 5,
-      .h = 10,
-      .color = 0,
-  };
-
-  uint16_t *canvas = vga_get_canvas();
-
-  for (uint i = 0; i < 5; i++) {
-    draw_point.x = gs->draw_point_ai.x + i * 10;
-    mutex_enter_blocking(&render_sync_mutex);
-    { vga_draw_rectangle_filled(canvas, &draw_point); }
-    mutex_exit(&render_sync_mutex);
-  }
-
-  for (uint i = 0; i < 5; i++) {
-    draw_point.x = gs->draw_point_player.x - i * 10 - gs->draw_point_player.w;
-    mutex_enter_blocking(&render_sync_mutex);
-    { vga_draw_rectangle_filled(canvas, &draw_point); }
-    mutex_exit(&render_sync_mutex);
-  }
-
-  gs->reset_score = false;
 }
 
 void update_canvas(struct game_state *gs) {
@@ -134,30 +107,37 @@ void update_canvas(struct game_state *gs) {
 
   mutex_enter_blocking(&game_state_mutex);
 
-  if (gs->reset_score)
-    reset_points(gs);
-  else {
-    for (uint i = 0; i < gs->ai_score; i++) {
-      int prev_pos = gs->draw_point_ai.x;
-      gs->draw_point_ai.x += i * 10;
+  if (gs->reset_score) {
+    mutex_enter_blocking(&render_sync_mutex);
+    vga_clear_canvas(canvas);
+    mutex_exit(&render_sync_mutex);
 
-      mutex_enter_blocking(&render_sync_mutex);
-      { vga_draw_rectangle_filled(canvas, &gs->draw_point_ai); }
-      mutex_exit(&render_sync_mutex);
+    gs->reset_score = false;
+    mutex_exit(&game_state_mutex);
 
-      gs->draw_point_ai.x = prev_pos;
-    }
+    return;
+  }
 
-    for (uint i = 0; i < gs->player_score; i++) {
-      int prev_pos = gs->draw_point_player.x;
-      gs->draw_point_player.x -= i * 10 - gs->draw_point_player.w;
+  for (uint i = 0; i < gs->ai_score; i++) {
+    int prev_pos = gs->draw_point_ai.x;
+    gs->draw_point_ai.x += i * 10;
 
-      mutex_enter_blocking(&render_sync_mutex);
-      { vga_draw_rectangle_filled(canvas, &gs->draw_point_player); }
-      mutex_exit(&render_sync_mutex);
+    mutex_enter_blocking(&render_sync_mutex);
+    { vga_draw_rectangle_filled(canvas, &gs->draw_point_ai); }
+    mutex_exit(&render_sync_mutex);
 
-      gs->draw_point_player.x = prev_pos;
-    }
+    gs->draw_point_ai.x = prev_pos;
+  }
+
+  for (uint i = 0; i < gs->player_score; i++) {
+    int prev_pos = gs->draw_point_player.x;
+    gs->draw_point_player.x -= i * 10 - gs->draw_point_player.w;
+
+    mutex_enter_blocking(&render_sync_mutex);
+    { vga_draw_rectangle_filled(canvas, &gs->draw_point_player); }
+    mutex_exit(&render_sync_mutex);
+
+    gs->draw_point_player.x = prev_pos;
   }
 
   mutex_exit(&game_state_mutex);

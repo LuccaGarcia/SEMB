@@ -24,23 +24,6 @@ void vga_init() {
 
 uint16_t *vga_get_canvas() {
   static uint16_t canvas[320 * 240] = {0};
-
-  // TODO: Discover why malloc fails
-  //
-  //  Initialize canvas if not already done
-  /* if (canvas == NULL) { */
-  /*   canvas = (uint16_t *)malloc(sizeof(uint16_t) * CANVAS_SIZE); */
-  /*   if (canvas == NULL) { */
-  /*     printf("Error: Memory allocation for canvas failed!\n"); */
-  /*     return NULL; */
-  /*   } */
-  /**/
-  /*   // Clear the canvas */
-  /*   for (size_t i = 0; i < CANVAS_SIZE; i++) { */
-  /*     canvas[i] = 0; */
-  /*   } */
-  /* } */
-
   return canvas;
 }
 

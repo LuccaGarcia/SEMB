@@ -1,4 +1,5 @@
 #include "game.h"
+#include <stdlib.h>
 
 void update_paddle_position(pong_rect *paddle, int move_direction,
                             uint16_t padding_y, uint16_t canvas_h) {
@@ -80,8 +81,18 @@ void gs_update_ai(struct game_state *gs) {
 // function that calculates if the ball is going to hit the left or right wall
 // and resets the game and the ball spwaning at the center
 void gs_reset_ball(struct game_state *gs) {
+
+  // random y offset for the ball
+  int16_t y_offset = (rand() % 50) - 25;
+
+  // random ball direction for the x and y axis
+  // x_dir = 1 or -1
+  // y_dir = 1 or -1
+  int16_t x_dir = (rand() % 2) ? 1 : -1;
+  int16_t y_dir = (rand() % 2) ? 1 : -1;
+
   gs->ball.x = gs->canvas_w / 2;
-  gs->ball.y = gs->canvas_h / 2;
-  gs->ball.v_x = 2;
-  gs->ball.v_y = 2;
+  gs->ball.y = gs->canvas_h / 2 + y_offset;
+  gs->ball.v_x = 2 * x_dir;
+  gs->ball.v_y = 2 * y_dir;
 }

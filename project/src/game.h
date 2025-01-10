@@ -13,8 +13,8 @@ typedef struct pong_rect {
   uint16_t w;
   uint16_t h;
 
-  uint16_t v_y;
-  uint16_t v_x;
+  int16_t v_y;
+  int16_t v_x;
 
   uint16_t color;
 } pong_rect;
@@ -31,8 +31,7 @@ struct game_state {
   pong_rect ball;
   pong_rect player;
   pong_rect ai;
-  
-  
+
   pong_rect draw_point_player;
   pong_rect draw_point_ai;
 
@@ -46,6 +45,5 @@ void gs_update_player(struct game_state *gs, int move_direction);
 void gs_update_ball(struct game_state *gs);
 void gs_update_ai(struct game_state *gs);
 void gs_reset_ball(struct game_state *gs);
-
 
 #endif

@@ -1,8 +1,6 @@
 #include <pico/scanvideo.h>
 #include <pico/scanvideo/composable_scanline.h>
 #include <pico/scanvideo/scanvideo_base.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include "vga.h"

@@ -163,7 +163,10 @@ static void prvGameLogicTask(void *pvParameters) {
 
     mutex_enter_blocking(&game_state_mutex);
     {
-      gs_update_player(gs, move_direction);
+      uint16_t y_vel = gs->player.v_y;
+
+      gs->player.v_y *= move_direction;
+      gs_update_player(gs);
       gs_update_ai(gs);
       gs_update_ball(gs);
 
@@ -172,6 +175,8 @@ static void prvGameLogicTask(void *pvParameters) {
         gs->player_score = 0;
         gs->ai_score = 0;
       }
+
+      gs->player.v_y = y_vel;
     }
     mutex_exit(&game_state_mutex);
 

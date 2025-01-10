@@ -41,7 +41,7 @@ struct game_state {
   bool reset_score;
 };
 
-void gs_update_player(struct game_state *gs, int move_direction);
+void gs_update_player(struct game_state *gs);
 void gs_update_ball(struct game_state *gs);
 void gs_update_ai(struct game_state *gs);
 void gs_reset_ball(struct game_state *gs);

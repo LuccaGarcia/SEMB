@@ -48,6 +48,7 @@ void gs_update_ball(struct game_state *gs) {
       gs->ball.y + gs->ball.h > gs->player.y) {
     gs->ball.x = gs->player.x + gs->player.w; // Place ball at paddle edge
     gs->ball.v_x *= -1;                       // Reverse velocity
+    gs->ball.v_y += gs->player.v_y / 2;       // Add paddle velocity
   }
 
   // Check collision with AI paddle
@@ -55,12 +56,13 @@ void gs_update_ball(struct game_state *gs) {
       gs->ball.y < gs->ai.y + gs->ai.h && gs->ball.y + gs->ball.h > gs->ai.y) {
     gs->ball.x = gs->ai.x - gs->ball.w; // Place ball at paddle edge
     gs->ball.v_x *= -1;                 // Reverse velocity
+    gs->ball.v_y += gs->ai.v_y / 2;     // Add paddle velocity
   }
 }
 
-void gs_update_player(struct game_state *gs, int move_direction) {
+void gs_update_player(struct game_state *gs) {
   // Move the player paddle
-  update_paddle_position(&gs->player, move_direction * gs->player.v_y,
+  update_paddle_position(&gs->player, gs->player.v_y,
                          gs->padding_y, gs->canvas_h);
 }
 
